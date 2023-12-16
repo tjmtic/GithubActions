@@ -1,0 +1,27 @@
+name: Deploy to Google Play
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Release
+      run: ./gradlew bundleRelease
+      # Replace with your build command
+
+    - name: Publish to Google Play
+      uses: r0adkll/upload-google-play@v1
+      with:
+        serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
+        packageName: ${{ secrets.APP_PACKAGE }}
+        releaseFiles: app/build/outputs/bundle/release/*.aab
+        track: internal
