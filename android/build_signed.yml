@@ -1,4 +1,4 @@
-name: Build and Release Android App
+name: Build Release Android App APK
 
 on:
   push:
@@ -19,12 +19,39 @@ jobs:
         distribution: 'temurin'
 
     - name: Decode Keystore File
-      run: echo "${{ secrets.KEYSTORE }}" | base64 -d > my-release-key.keystore
+      run: echo "${{ secrets.KEYSTORE }}" | base64 -d > app/${{ secrets.KEYSTORE_PATH }}
+
+    - name: List files in the app directory
+      run: |
+        echo "Current directory:"
+        pwd
+        echo "Directory contents:"
+        ls -la
+        echo "Directory contents /app/:"
+        ls -la app/
+
+    - name: Set permissions for the Keystore
+      run: chmod 644 app/${{ secrets.KEYSTORE_PATH }}
+
+    - name: Check Keystore File
+      run: |
+        if [ -f app/${{ secrets.KEYSTORE_PATH }} ]; then
+          echo "Keystore file found."
+        else
+          echo "Keystore file not found."
+        fi
+
+    - name: Check Keystore File
+      run: keytool -list -v -keystore app/${{ secrets.KEYSTORE_PATH }} -storepass ${{ secrets.KEYSTORE_PASSWORD }}
 
     - name: Build Release APK
-      run: |
-        ./gradlew assembleRelease -Pandroid.injected.signing.store.file=my-release-key.keystore -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
-      
+      run: ./gradlew assembleRelease -Pandroid.injected.signing.store.file=${{ secrets.KEYSTORE_PATH }} -Pandroid.injected.signing.keystore.password=${{ secrets.KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+      env:
+           KEYSTORE_PATH: ${{ secrets.KEYSTORE_PATH }}
+           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+           KEY_ALIAS: ${{ secrets.ALIAS }}
+           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
     - name: Upload Release APK
       uses: actions/upload-artifact@v2
       with:
